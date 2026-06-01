@@ -1,5 +1,4 @@
 name: "CodeQL Advanced"
-
 on:
   push:
     branches: [ "main" ]
@@ -7,7 +6,6 @@ on:
     branches: [ "main" ]
   schedule:
     - cron: '27 18 * * 3'
-
 jobs:
   analyze:
     name: Analyze (java-kotlin)
@@ -17,15 +15,12 @@ jobs:
       packages: read
       actions: read
       contents: read
-
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
-      # Change java-version to match your pom.xml / build.gradle (e.g. '17', '21')
-      # Change cache to 'gradle' if you use Gradle instead of Maven
       - name: Set up Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: '21'
           distribution: 'temurin'
@@ -36,16 +31,45 @@ jobs:
         with:
           languages: java-kotlin
           build-mode: autobuild
-          # security-extended adds SQL injection, path traversal, SSRF etc.
-          # Important for a Spring Boot + Postgres stack.
           queries: security-extended
 
-      # If autobuild fails, switch build-mode above to 'manual' and
-      # uncomment the step below:
-      #
-      # - name: Manual build
-      #   run: ./mvnw clean package -DskipTests
-      #   # or: ./gradlew build -x test
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: "/language:java-kotlin"name: "CodeQL Advanced"
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  schedule:
+    - cron: '27 18 * * 3'
+jobs:
+  analyze:
+    name: Analyze (java-kotlin)
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      packages: read
+      actions: read
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: java-kotlin
+          build-mode: autobuild
+          queries: security-extended
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v4
