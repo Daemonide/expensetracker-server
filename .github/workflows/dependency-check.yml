@@ -7,6 +7,8 @@ on:
 jobs:
   dependency-check:
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -30,6 +32,8 @@ jobs:
             nvd-cache-${{ runner.os }}-
 
       - name: Run OWASP Dependency Check
+        env:
+          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
         run: |
           ./mvnw org.owasp:dependency-check-maven:check \
             -DfailBuildOnCVSS=7 \
@@ -37,7 +41,7 @@ jobs:
             -Dformat=HTML \
             -DoutputDirectory=reports \
             -DdataDirectory=$HOME/.gradle/dependency-check-data \
-            -DnvdApiKey=${{ secrets.NVD_API_KEY }}
+            -DnvdApiKey="${NVD_API_KEY}"
 
       - name: Upload report
         uses: actions/upload-artifact@v5
