@@ -1,9 +1,6 @@
 package com.daemonide.expensetracker.controller;
 
-import com.daemonide.expensetracker.dto.AuthResponseDTO;
-import com.daemonide.expensetracker.dto.LoginRequestDTO;
-import com.daemonide.expensetracker.dto.RefreshRequestDTO;
-import com.daemonide.expensetracker.dto.RegisterRequestDTO;
+import com.daemonide.expensetracker.dto.*;
 import com.daemonide.expensetracker.exception.ErrorResponse;
 import com.daemonide.expensetracker.exception.InvalidLoginException;
 import com.daemonide.expensetracker.exception.UserAlreadyExistsException;
@@ -46,5 +43,17 @@ public class UserController {
     @ResponseStatus(HttpStatus.CONFLICT)
     public ErrorResponse handleUserAlreadyExistsException(UserAlreadyExistsException e) {
         return new ErrorResponse(HttpStatus.CONFLICT.value(), e.getMessage());
+    }
+
+    @PostMapping("/logout")
+    public String logout(
+            @RequestBody LogoutRequestDTO request
+    ) {
+
+        authService.logout(
+                request.getRefreshToken()
+        );
+
+        return "Logged out";
     }
 }

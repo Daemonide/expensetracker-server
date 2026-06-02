@@ -7,11 +7,15 @@ import com.daemonide.expensetracker.dto.RegisterRequestDTO;
 import com.daemonide.expensetracker.exception.InvalidLoginException;
 import com.daemonide.expensetracker.exception.UserAlreadyExistsException;
 import com.daemonide.expensetracker.model.AppUser;
+import com.daemonide.expensetracker.model.RefreshToken;
+import com.daemonide.expensetracker.repository.RefreshTokenRepository;
 import com.daemonide.expensetracker.repository.UserRepository;
 import com.daemonide.expensetracker.util.PasswordValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.time.Instant;
 
 @Service
 @RequiredArgsConstructor
@@ -21,6 +25,7 @@ public class AuthService {
     private final PasswordEncoder encoder;
     private final JwtService jwtService;
     private final TurnstileService turnstileService;
+    private final RefreshTokenRepository refreshTokenRepository;
 
     public String register(RegisterRequestDTO request) {
         if (!turnstileService.verify(request.getCaptchaToken())) {
@@ -61,36 +66,81 @@ public class AuthService {
         }
 
         String accessToken = jwtService.generateToken(user);
-        String refreshToken = jwtService.generateRefreshToken(user.getUsername());
 
-        return new AuthResponseDTO(accessToken, refreshToken);
+        String refreshTokenValue =
+                jwtService.generateRefreshToken(
+                        user.getUsername()
+                );
+
+        RefreshToken refreshToken = new RefreshToken();
+
+        refreshToken.setToken(refreshTokenValue);
+        refreshToken.setUser(user);
+
+        refreshToken.setExpiryDate(
+                jwtService
+                        .extractExpiration(refreshTokenValue)
+                        .toInstant()
+        );
+
+        refreshTokenRepository.save(refreshToken);
+
+        return new AuthResponseDTO(
+                accessToken,
+                refreshTokenValue
+        );
     }
 
-    public AuthResponseDTO refresh(RefreshRequestDTO request) {
+    public AuthResponseDTO refresh(
+            RefreshRequestDTO request
+    ) {
 
-        try {
-            String refreshToken = request.getRefreshToken();
+        RefreshToken tokenEntity =
+                refreshTokenRepository
+                        .findByToken(
+                                request.getRefreshToken()
+                        )
+                        .orElseThrow(
+                                () -> new RuntimeException(
+                                        "Invalid refresh token"
+                                )
+                        );
 
-            String username =
-                    jwtService.extractUsername(refreshToken);
 
-            if (jwtService.isTokenExpired(refreshToken)) {
-                throw new RuntimeException("Refresh token expired");
-            }
-
-            AppUser user = userRepository.findByUsername(username)
-                    .orElseThrow(() -> new RuntimeException("User not found"));
-
-            String newAccessToken =
-                    jwtService.generateToken(user);
-
-            return new AuthResponseDTO(
-                    newAccessToken,
-                    refreshToken
+        if (
+                tokenEntity.getExpiryDate()
+                        .isBefore(Instant.now())
+        ) {
+            throw new RuntimeException(
+                    "Refresh token expired"
             );
-
-        } catch (Exception e) {
-            throw new RuntimeException("Invalid refresh token");
         }
+
+        AppUser user =
+                tokenEntity.getUser();
+
+        String newAccessToken =
+                jwtService.generateToken(user);
+
+        return new AuthResponseDTO(
+                newAccessToken,
+                request.getRefreshToken()
+        );
+    }
+
+    public void logout(
+            String refreshTokenValue
+    ) {
+
+        RefreshToken token =
+                refreshTokenRepository
+                        .findByToken(refreshTokenValue)
+                        .orElseThrow(
+                                () -> new RuntimeException(
+                                        "Invalid refresh token"
+                                )
+                        );
+
+        refreshTokenRepository.delete(token);
     }
 }
