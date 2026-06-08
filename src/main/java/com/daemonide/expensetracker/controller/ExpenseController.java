@@ -46,7 +46,7 @@ public class ExpenseController {
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer size,
             @RequestParam(defaultValue = "date") String sortField,
-            @RequestParam(defaultValue = "DESC") String sortDirection,  // was "direction"
+            @RequestParam(defaultValue = "DESC") String sortDirection,
             @RequestParam(defaultValue = "false") Boolean fetchAll
     ) {
         PaginationRequest request = PaginationRequest.builder()
