@@ -11,6 +11,7 @@ public class CategoryMapper {
         CategoryResponseDTO dto = new CategoryResponseDTO();
         dto.setCategoryId(category.getId());
         dto.setName(category.getName());
+        dto.setIconName(category.getIconName());
         dto.setExpenseCount(category.getExpenseCount());
         return dto;
     }
@@ -18,6 +19,7 @@ public class CategoryMapper {
     public static Category toEntity(CategoryRequestDTO dto) {
         Category category = new Category();
         category.setName(dto.getName());
+        category.setIconName(dto.getIconName());
         return category;
     }
 

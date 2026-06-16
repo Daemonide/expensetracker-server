@@ -21,6 +21,8 @@ public class Category {
     @NotBlank
     private String name;
 
+    private String iconName;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private AppUser user;

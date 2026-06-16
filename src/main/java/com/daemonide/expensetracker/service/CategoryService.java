@@ -72,7 +72,10 @@ public class CategoryService {
         AppUser currentUser = userDetailsService.getCurrentUser();
         Category category = categoryRepository.findByIdAndUser(id, currentUser)
                 .orElseThrow(() -> new NoSuchCategoryExistsException("Category not found or unauthorized"));
+
         category.setName(newCategory.getName());
+        category.setIconName(newCategory.getIconName());
+
         return CategoryMapper.toDTO(categoryRepository.save(category));
     }
 }
