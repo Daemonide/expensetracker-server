@@ -16,7 +16,9 @@ import java.time.LocalDate;
         "date",
         "categoryId",
         "categoryName",
-        "expenseStatus"
+        "status",
+        "financialAccountId",
+        "financialAccountName"
 })
 public class ExpenseResponseDTO {
     private long expenseID;
@@ -26,4 +28,6 @@ public class ExpenseResponseDTO {
     private long categoryId;
     private String categoryName;
     private ExpenseStatus status;
+    private long financialAccountId;
+    private String financialAccountName;
 }

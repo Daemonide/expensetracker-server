@@ -1,13 +1,12 @@
 package com.daemonide.expensetracker.controller;
 
 import com.daemonide.expensetracker.dto.*;
-import com.daemonide.expensetracker.exception.ErrorResponse;
-import com.daemonide.expensetracker.exception.InvalidLoginException;
-import com.daemonide.expensetracker.exception.UserAlreadyExistsException;
 import com.daemonide.expensetracker.service.AuthService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RequiredArgsConstructor
 @RestController
@@ -33,17 +32,6 @@ public class UserController {
         return authService.refresh(request);
     }
 
-    @ExceptionHandler(value = InvalidLoginException.class)
-    @ResponseStatus(HttpStatus.UNAUTHORIZED)
-    public ErrorResponse handleInvalidLoginException(InvalidLoginException e) {
-        return new ErrorResponse(HttpStatus.UNAUTHORIZED.value(), e.getMessage());
-    }
-
-    @ExceptionHandler(value = UserAlreadyExistsException.class)
-    @ResponseStatus(HttpStatus.CONFLICT)
-    public ErrorResponse handleUserAlreadyExistsException(UserAlreadyExistsException e) {
-        return new ErrorResponse(HttpStatus.CONFLICT.value(), e.getMessage());
-    }
 
     @PostMapping("/logout")
     public String logout(

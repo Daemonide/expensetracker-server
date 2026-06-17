@@ -14,6 +14,8 @@ import java.time.LocalDate;
         "amount",
         "date",
         "categoryId",
+        "status",
+        "financialAccountId"
 })
 public class ExpenseRequestDTO {
     private String title;
@@ -21,4 +23,5 @@ public class ExpenseRequestDTO {
     private LocalDate date;
     private long categoryId;
     private ExpenseStatus status;
+    private long financialAccountId;
 }

@@ -50,4 +50,7 @@ public class Expense {
             """)
     private Integer statusOrder;
 
+    @ManyToOne
+    @JoinColumn(name = "financial_account_id")
+    private FinancialAccount financialAccount;
 }

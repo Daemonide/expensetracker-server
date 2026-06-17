@@ -2,15 +2,12 @@ package com.daemonide.expensetracker.controller;
 
 import com.daemonide.expensetracker.dto.CategoryRequestDTO;
 import com.daemonide.expensetracker.dto.CategoryResponseDTO;
-import com.daemonide.expensetracker.exception.ErrorResponse;
-import com.daemonide.expensetracker.exception.NoSuchCategoryExistsException;
 import com.daemonide.expensetracker.pagination.PaginationRequest;
 import com.daemonide.expensetracker.pagination.PagingResult;
 import com.daemonide.expensetracker.service.CategoryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -59,9 +56,5 @@ public class CategoryController {
         categoryService.deleteCategoryById(id);
     }
 
-    @ExceptionHandler(value = NoSuchCategoryExistsException.class)
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    public ErrorResponse handleNoSuchCategoryExistsException(NoSuchCategoryExistsException e) {
-        return new ErrorResponse(HttpStatus.NOT_FOUND.value(), e.getMessage());
-    }
+
 }

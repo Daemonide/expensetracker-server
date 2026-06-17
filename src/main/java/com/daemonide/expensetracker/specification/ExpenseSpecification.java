@@ -17,6 +17,7 @@ public class ExpenseSpecification {
             String search,
             String status,
             Long categoryId,
+            Long financialAccountId,
             LocalDate dateFrom,
             LocalDate dateTo
     ) {
@@ -25,8 +26,15 @@ public class ExpenseSpecification {
                 .and(hasSearch(search))
                 .and(hasStatus(status))
                 .and(hasCategory(categoryId))
+                .and(hasFinancialAccount(financialAccountId))
                 .and(hasDateFrom(dateFrom))
                 .and(hasDateTo(dateTo));
+    }
+
+    private static Specification<Expense> hasFinancialAccount(Long financialAccountId) {
+        return (root, query, cb) ->
+                financialAccountId == null ? cb.conjunction()
+                        : cb.equal(root.get("financialAccount").get("id"), financialAccountId);
     }
 
     private static Specification<Expense> hasUser(AppUser user) {

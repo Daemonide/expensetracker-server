@@ -1,9 +1,6 @@
 package com.daemonide.expensetracker.repository;
 
-import com.daemonide.expensetracker.model.AppUser;
-import com.daemonide.expensetracker.model.Category;
-import com.daemonide.expensetracker.model.Expense;
-import com.daemonide.expensetracker.model.ExpenseStatus;
+import com.daemonide.expensetracker.model.*;
 import com.daemonide.expensetracker.projection.CategorySummaryProjection;
 import com.daemonide.expensetracker.projection.MonthlyTrendProjection;
 import com.daemonide.expensetracker.projection.StatusSummaryProjection;
@@ -131,5 +128,12 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long>,
             """)
     List<StatusSummaryProjection> getStatusSummary(
             @Param("user") AppUser user
+    );
+
+    @Query("SELECT e FROM Expense e JOIN e.financialAccount fa WHERE e.financialAccount = :financialAccount AND e.user = :user")
+    Page<Expense> findByFinancialAccountAndUser(
+            @Param("financialAccount") FinancialAccount financialAccount,
+            @Param("user") AppUser user,
+            Pageable pageable
     );
 }
