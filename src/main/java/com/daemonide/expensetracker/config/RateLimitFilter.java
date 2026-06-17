@@ -18,8 +18,13 @@ public class RateLimitFilter implements Filter {
     private final Map<String, Bucket> buckets = new ConcurrentHashMap<>();
 
     private Bucket createBucket() {
+        Bandwidth limit = Bandwidth.builder()
+                .capacity(5)
+                .refillGreedy(5, Duration.ofMinutes(1))
+                .build();
+
         return Bucket.builder()
-                .addLimit(Bandwidth.simple(5, Duration.ofMinutes(1)))
+                .addLimit(limit)
                 .build();
     }
 
