@@ -24,10 +24,8 @@ public class DashboardResponseDTO {
     private long completedExpenses;
 
     private List<MonthlyTrendDTO> monthlyTrend;
-
+    private List<AccountMonthlyTrendDTO> accountMonthlyTrend;
     private List<CategorySummaryDTO> categorySummary;
-
     private List<StatusSummaryDTO> statusSummary;
-
     private List<ExpenseResponseDTO> recentExpenses;
 }

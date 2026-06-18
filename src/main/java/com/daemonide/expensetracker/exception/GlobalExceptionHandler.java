@@ -10,13 +10,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(NoSuchFinancialAccountExistsException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    public ErrorResponse handleNoSuchFinancialAccountExistsException(
-            NoSuchFinancialAccountExistsException e) {
-
-        return new ErrorResponse(
-                HttpStatus.NOT_FOUND.value(),
-                e.getMessage()
-        );
+    public ErrorResponse handleNoSuchFinancialAccountExistsException(NoSuchFinancialAccountExistsException e) {
+        return new ErrorResponse(HttpStatus.NOT_FOUND.value(), e.getMessage());
     }
 
     @ExceptionHandler(value = NoSuchCategoryExistsException.class)

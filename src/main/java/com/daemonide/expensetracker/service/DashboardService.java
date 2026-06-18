@@ -1,9 +1,6 @@
 package com.daemonide.expensetracker.service;
 
-import com.daemonide.expensetracker.dto.CategorySummaryDTO;
-import com.daemonide.expensetracker.dto.DashboardResponseDTO;
-import com.daemonide.expensetracker.dto.MonthlyTrendDTO;
-import com.daemonide.expensetracker.dto.StatusSummaryDTO;
+import com.daemonide.expensetracker.dto.*;
 import com.daemonide.expensetracker.mapper.ExpenseMapper;
 import com.daemonide.expensetracker.model.AppUser;
 import com.daemonide.expensetracker.model.ExpenseStatus;
@@ -34,48 +31,67 @@ public class DashboardService {
 
         AppUser user = userDetailsService.getCurrentUser();
 
-        Map<YearMonth, Double> dbTrend =
+        // ── Monthly overall trend ──────────────────────────────────────────────
+        // FIX: Map the whole projection instead of just the amount to preserve the count
+        Map<YearMonth, MonthlyTrendProjection> dbTrend =
                 expenseRepository.getMonthlyTrend(user.getId())
                         .stream()
                         .collect(Collectors.toMap(
                                 p -> YearMonth.parse(p.getMonth()),
-                                MonthlyTrendProjection::getAmount
+                                p -> p
                         ));
 
         List<MonthlyTrendDTO> monthlyTrend =
                 IntStream.rangeClosed(0, 5)
                         .mapToObj(i -> YearMonth.now().minusMonths(5 - i))
-                        .map(ym -> new MonthlyTrendDTO(
-                                ym.getMonth()
-                                        .getDisplayName(
-                                                TextStyle.SHORT,
-                                                Locale.ENGLISH
-                                        )
-                                        + " "
-                                        + String.valueOf(ym.getYear())
-                                        .substring(2),
-                                dbTrend.getOrDefault(ym, 0.0)
-                        ))
+                        .map(ym -> {
+                            MonthlyTrendProjection proj = dbTrend.get(ym);
+                            return new MonthlyTrendDTO(
+                                    ym.getMonth()
+                                            .getDisplayName(TextStyle.SHORT, Locale.ENGLISH)
+                                            + " "
+                                            + String.valueOf(ym.getYear()).substring(2),
+                                    proj != null ? proj.getAmount() : 0.0,
+                                    proj != null ? proj.getCount() : 0L // FIX: Use actual count instead of hardcoded 1L
+                            );
+                        })
                         .toList();
 
+        // ── Per-account monthly trend ──────────────────────────────────────────
+        List<AccountMonthlyTrendDTO> accountMonthlyTrend =
+                expenseRepository.getAccountMonthlyTrend(user.getId())
+                        .stream()
+                        .map(p -> {
+                            YearMonth ym = YearMonth.parse(p.getMonth());
+                            String label = ym.getMonth()
+                                    .getDisplayName(TextStyle.SHORT, Locale.ENGLISH)
+                                    + " "
+                                    + String.valueOf(ym.getYear()).substring(2);
+                            return new AccountMonthlyTrendDTO(
+                                    label,
+                                    p.getAccountId(),
+                                    p.getAccountName(),
+                                    p.getAmount()
+                            );
+                        })
+                        .toList();
+
+        // ── Category summary ───────────────────────────────────────────────────
         List<CategorySummaryDTO> categorySummary =
                 expenseRepository.getCategorySummary(user.getId())
                         .stream()
                         .map(this::mapCategory)
                         .toList();
 
+        // ── Status summary ─────────────────────────────────────────────────────
         List<StatusSummaryDTO> rawStatuses =
                 expenseRepository.getStatusSummary(user)
                         .stream()
                         .map(this::mapStatus)
                         .toList();
 
-        List<String> order = List.of(
-                "DONE",
-                "IN_PROGRESS",
-                "PENDING",
-                "CANCELLED"
-        );
+        // Change List<String> to List<ExpenseStatus>
+        List<String> order = List.of("DONE", "IN_PROGRESS", "PENDING", "CANCELLED");
 
         List<StatusSummaryDTO> statusSummary =
                 order.stream()
@@ -89,70 +105,31 @@ public class DashboardService {
                         .toList();
 
         return DashboardResponseDTO.builder()
-                .totalSpent(
-                        expenseRepository.getTotalSpent(user)
-                )
-                .thisMonthSpent(
-                        expenseRepository.getThisMonthSpent(user.getId())
-                )
-                .pendingAmount(
-                        expenseRepository.getAmountByStatus(
-                                user,
-                                ExpenseStatus.PENDING
-                        )
-                )
-                .completedAmount(
-                        expenseRepository.getAmountByStatus(
-                                user,
-                                ExpenseStatus.DONE
-                        )
-                )
-                .totalExpenses(
-                        expenseRepository.countByUser(user)
-                )
-                .thisMonthExpenses(
-                        expenseRepository.countThisMonth(user.getId())
-                )
-                .pendingExpenses(
-                        expenseRepository.countByUserAndStatus(
-                                user,
-                                ExpenseStatus.PENDING
-                        )
-                )
-                .completedExpenses(
-                        expenseRepository.countByUserAndStatus(
-                                user,
-                                ExpenseStatus.DONE
-                        )
-                )
+                .totalSpent(expenseRepository.getTotalSpent(user))
+                .thisMonthSpent(expenseRepository.getThisMonthSpent(user.getId()))
+                .pendingAmount(expenseRepository.getAmountByStatus(user, ExpenseStatus.PENDING))
+                .completedAmount(expenseRepository.getAmountByStatus(user, ExpenseStatus.DONE))
+                .totalExpenses(expenseRepository.countByUser(user))
+                .thisMonthExpenses(expenseRepository.countThisMonth(user.getId()))
+                .pendingExpenses(expenseRepository.countByUserAndStatus(user, ExpenseStatus.PENDING))
+                .completedExpenses(expenseRepository.countByUserAndStatus(user, ExpenseStatus.DONE))
                 .monthlyTrend(monthlyTrend)
+                .accountMonthlyTrend(accountMonthlyTrend)
                 .categorySummary(categorySummary)
                 .statusSummary(statusSummary)
                 .recentExpenses(
                         ExpenseMapper.toDTOList(
-                                expenseRepository
-                                        .findTop5ByUserOrderByDateDesc(user)
+                                expenseRepository.findTop5ByUserOrderByDateDesc(user)
                         )
                 )
                 .build();
     }
 
-    private CategorySummaryDTO mapCategory(
-            CategorySummaryProjection p
-    ) {
-        return new CategorySummaryDTO(
-                p.getCategory(),
-                p.getAmount()
-        );
+    private CategorySummaryDTO mapCategory(CategorySummaryProjection p) {
+        return new CategorySummaryDTO(p.getCategory(), p.getAmount(), p.getCount());
     }
 
-    private StatusSummaryDTO mapStatus(
-            StatusSummaryProjection p
-    ) {
-        return new StatusSummaryDTO(
-                p.getStatus(),
-                p.getCount(),
-                p.getAmount()
-        );
+    private StatusSummaryDTO mapStatus(StatusSummaryProjection p) {
+        return new StatusSummaryDTO(p.getStatus(), p.getCount(), p.getAmount());
     }
 }

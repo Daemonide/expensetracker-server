@@ -10,4 +10,5 @@ import lombok.NoArgsConstructor;
 public class CategorySummaryDTO {
     private String category;
     private Double amount;
+    private Long count;
 }

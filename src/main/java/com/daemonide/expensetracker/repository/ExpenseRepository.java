@@ -1,6 +1,7 @@
 package com.daemonide.expensetracker.repository;
 
 import com.daemonide.expensetracker.model.*;
+import com.daemonide.expensetracker.projection.AccountMonthlyTrendProjection;
 import com.daemonide.expensetracker.projection.CategorySummaryProjection;
 import com.daemonide.expensetracker.projection.MonthlyTrendProjection;
 import com.daemonide.expensetracker.projection.StatusSummaryProjection;
@@ -16,6 +17,7 @@ import java.util.Optional;
 
 public interface ExpenseRepository extends JpaRepository<Expense, Long>,
         JpaSpecificationExecutor<Expense> {
+
     @Query("SELECT e FROM Expense e JOIN e.category c WHERE e.user = :user")
     Page<Expense> findByUser(@Param("user") AppUser user, Pageable pageable);
 
@@ -70,9 +72,7 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long>,
             @Param("status") ExpenseStatus status
     );
 
-    List<Expense> findTop5ByUserOrderByDateDesc(
-            AppUser user
-    );
+    List<Expense> findTop5ByUserOrderByDateDesc(AppUser user);
 
     long countByUser(AppUser user);
 
@@ -90,21 +90,37 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long>,
     @Query(value = """
             SELECT
                 TO_CHAR(date_trunc('month', e.date), 'YYYY-MM') AS month,
-                COALESCE(SUM(e.amount), 0) AS amount
+                COALESCE(SUM(e.amount), 0) AS amount,
+                COUNT(e.id) AS count
             FROM expense e
             WHERE e.user_id = :userId
               AND e.date >= date_trunc('month', CURRENT_DATE) - interval '5 months'
             GROUP BY date_trunc('month', e.date)
             ORDER BY date_trunc('month', e.date)
             """, nativeQuery = true)
-    List<MonthlyTrendProjection> getMonthlyTrend(
-            @Param("userId") Long userId
-    );
+    List<MonthlyTrendProjection> getMonthlyTrend(@Param("userId") Long userId);
+
+    @Query(value = """
+            SELECT
+                TO_CHAR(date_trunc('month', e.date), 'YYYY-MM') AS month,
+                fa.id                                             AS accountId,
+                fa.name                                           AS accountName,
+                COALESCE(SUM(e.amount), 0)                        AS amount
+            FROM expense e
+            JOIN financial_account fa ON fa.id = e.financial_account_id
+            WHERE e.user_id = :userId
+              AND e.financial_account_id IS NOT NULL
+              AND e.date >= date_trunc('month', CURRENT_DATE) - interval '5 months'
+            GROUP BY date_trunc('month', e.date), fa.id, fa.name
+            ORDER BY date_trunc('month', e.date), fa.id
+            """, nativeQuery = true)
+    List<AccountMonthlyTrendProjection> getAccountMonthlyTrend(@Param("userId") Long userId);
 
     @Query(value = """
             SELECT
                 c.name AS category,
-                SUM(e.amount) AS amount
+                COALESCE(SUM(e.amount), 0) AS amount,
+                COUNT(e.id) AS count
             FROM expense e
             JOIN category c
             ON c.id = e.category_id
@@ -113,9 +129,7 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long>,
             ORDER BY SUM(e.amount) DESC
             LIMIT 8
             """, nativeQuery = true)
-    List<CategorySummaryProjection> getCategorySummary(
-            @Param("userId") Long userId
-    );
+    List<CategorySummaryProjection> getCategorySummary(@Param("userId") Long userId);
 
     @Query("""
             SELECT
@@ -126,9 +140,7 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long>,
             WHERE e.user = :user
             GROUP BY e.status
             """)
-    List<StatusSummaryProjection> getStatusSummary(
-            @Param("user") AppUser user
-    );
+    List<StatusSummaryProjection> getStatusSummary(@Param("user") AppUser user);
 
     @Query("SELECT e FROM Expense e JOIN e.financialAccount fa WHERE e.financialAccount = :financialAccount AND e.user = :user")
     Page<Expense> findByFinancialAccountAndUser(
