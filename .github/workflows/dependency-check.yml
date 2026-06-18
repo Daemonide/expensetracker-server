@@ -4,16 +4,13 @@ on:
   push:
     branches:
       - main
-
   schedule:
     - cron: '0 3 * * 1'
-
   workflow_dispatch:
 
 jobs:
   dependency-check:
     runs-on: ubuntu-latest
-
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
@@ -39,6 +36,16 @@ jobs:
           restore-keys: |
             dependency-check-${{ runner.os }}-
 
+      - name: Update NVD Database (try, but don't fail)
+        run: |
+          ./mvnw org.owasp:dependency-check-maven:12.2.2:update-only \
+            -DdataDirectory=$HOME/.m2/dependency-check-data \
+            -DnvdApiKey="${{ secrets.NVD_API_KEY }}" \
+            -DconnectionTimeout=60000 \
+            -DreadTimeout=60000 \
+            -DmaxRetries=3
+        continue-on-error: true
+
       - name: Run OWASP Dependency Check
         env:
           NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
@@ -48,8 +55,11 @@ jobs:
             -DretireJsAnalyzerEnabled=true \
             -Dformat=HTML \
             -DdataDirectory=$HOME/.m2/dependency-check-data \
+            -DnvdApiKey="${NVD_API_KEY}" \
             -DfailOnUpdateError=false \
-            -DnvdApiKey="${NVD_API_KEY}"
+            -DconnectionTimeout=60000 \
+            -DreadTimeout=60000 \
+            -DmaxRetries=3
 
       - name: Upload Dependency Check Report
         if: always()
