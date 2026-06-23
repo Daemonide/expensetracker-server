@@ -32,7 +32,6 @@ public class DashboardService {
         AppUser user = userDetailsService.getCurrentUser();
 
         // ── Monthly overall trend ──────────────────────────────────────────────
-        // FIX: Map the whole projection instead of just the amount to preserve the count
         Map<YearMonth, MonthlyTrendProjection> dbTrend =
                 expenseRepository.getMonthlyTrend(user.getId())
                         .stream()
@@ -52,7 +51,7 @@ public class DashboardService {
                                             + " "
                                             + String.valueOf(ym.getYear()).substring(2),
                                     proj != null ? proj.getAmount() : 0.0,
-                                    proj != null ? proj.getCount() : 0L // FIX: Use actual count instead of hardcoded 1L
+                                    proj != null ? proj.getCount() : 0L
                             );
                         })
                         .toList();
@@ -90,7 +89,6 @@ public class DashboardService {
                         .map(this::mapStatus)
                         .toList();
 
-        // Change List<String> to List<ExpenseStatus>
         List<String> order = List.of("DONE", "IN_PROGRESS", "PENDING", "CANCELLED");
 
         List<StatusSummaryDTO> statusSummary =
