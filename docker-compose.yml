@@ -1,0 +1,20 @@
+services:
+  expense-tracker-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: expense-tracker-api:latest
+    container_name: expense-tracker-api
+    restart: unless-stopped
+    networks:
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.expense-tracker-api.rule=Host(`api.expensetracker.daemonide.dev`)"
+      - "traefik.http.routers.expense-tracker-api.entrypoints=websecure"
+      - "traefik.http.routers.expense-tracker-api.tls.certresolver=cloudflare"
+      - "traefik.http.services.expense-tracker-api.loadbalancer.server.port=8080"
+
+networks:
+  proxy:
+    external: true
