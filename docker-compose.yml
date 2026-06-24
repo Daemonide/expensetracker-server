@@ -6,6 +6,8 @@ services:
     image: expense-tracker-api:latest
     container_name: expense-tracker-api
     restart: unless-stopped
+    env_file:
+      - stack.env
     networks:
       - proxy
     labels:
